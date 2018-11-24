@@ -12,6 +12,8 @@ public class MessageModel {
     private String data;
     private Date updateTime;
     private DataType dataType;
+    private String[] userIdList;
+
 
     public String getUid() {
         return uid;
@@ -75,5 +77,13 @@ public class MessageModel {
 
     public void setCorpsecret(String corpsecret) {
         this.corpsecret = corpsecret;
+    }
+
+    public String[] getUserIdList() {
+        return userIdList;
+    }
+
+    public void setUserIdList(String[] userIdList) {
+        this.userIdList = userIdList;
     }
 }

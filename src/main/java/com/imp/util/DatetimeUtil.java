@@ -21,6 +21,22 @@ public class DatetimeUtil {
         format.format(date);
         return format.format(date);
     }
+    public static String getDateString(Date date) {
+        if(date == null){
+            return null;
+        }
+        SimpleDateFormat format = new SimpleDateFormat(DEFAULT_DATE);
+        format.format(date);
+        return format.format(date) + " 00:00:00";
+    }
+    public static String getDateTimeString(Date date) {
+        if(date == null){
+            return null;
+        }
+        SimpleDateFormat format = new SimpleDateFormat(DEFAULT_FORMAT_STRING);
+        format.format(date);
+        return format.format(date);
+    }
     /**
      * 两个时间之间相差距离多少天
      * @param str1 时间参数 1：

@@ -7,6 +7,7 @@ import com.imp.httpclient.HttpHelper;
 import com.imp.model.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -14,6 +15,7 @@ public class SynRecordUtil {
     public static final String OAPI_HOST = "https://oapi.dingtalk.com";
     public static final String GET_SYN_DATA = "/dingtalk/getMachineList.do";
     public static final String CALL_BACK = "/dingtalk/callBackRecord.do";
+    public static final int limitNum = 50;
     /**
      * 获取部门人员信息
      * Https请求方式: GET
@@ -26,31 +28,44 @@ public class SynRecordUtil {
         List<DingRecordModel> dingRecordModelList = new ArrayList<>();
         if (list != null) {
             for (MessageModel inMessage : list) {
-                DingRecordModel dingRecordModel = new DingRecordModel();
-                dingRecordModel.setCorpId(inMessage.getCorpId());
-                dingRecordModel.setRecordresult(new ArrayList<DingRecordresultModel>());
-                getRecord(inMessage, dingRecordModel);
-                if (dingRecordModel.getRecordresult().size() > 0){
-                    dingRecordModelList.add(dingRecordModel);
-                }
+                userListPaging(inMessage, dingRecordModelList);
             }
             HttpHelper.httpPost(serverUrl + CALL_BACK, JSON.toJSONString(dingRecordModelList));
         }
     }
 
+    public static void userListPaging(MessageModel inMessage, List<DingRecordModel> dingRecordModelList) {
+        String[] userList = inMessage.getUserIdList();
+        if (userList == null || userList.length == 0){
+            return;
+        }
+        for(int i = 0; i < userList.length; i += limitNum){
+            String[] userListTemp = Arrays.copyOfRange(userList, i, Math.min(userList.length, i + limitNum));
+            DingRecordModel dingRecordModel = new DingRecordModel();
+            dingRecordModel.setCorpId(inMessage.getCorpId());
+            dingRecordModel.setRecordresult(new ArrayList<DingRecordresultModel>());
+            dingRecordModel.setUserIdList(userListTemp);
+            getRecord(inMessage, dingRecordModel);
+            if (dingRecordModel.getRecordresult().size() > 0){
+                dingRecordModelList.add(dingRecordModel);
+            }
+        }
+    }
+
     private static void getRecord(MessageModel inMessage, DingRecordModel dingRecordModel) {
+        int offset = 0;
         try {
             MessageModel backMessage = new MessageModel();
-            if(inMessage.getCorpId().equals("ding2de2a71870809c4f35c2f4657eb6378f")){
-                System.out.println("JL4");
-            }
+//            if(!"ding2d5fc986802e338e35c2f4657eb6378f".equals(inMessage.getCorpId())){
+//                return;
+//            }
             String accessToken = AuthHelper.getAccessToken(backMessage, inMessage.getCorpId(), inMessage.getCorpsecret());
             if (accessToken == null) {
                 return;
             } else {
-                String dateNow = DatetimeUtil.toDefaultDateString(new Date());
-                String workDateFrom = DatetimeUtil.toDefaultDateString(inMessage.getUpdateTime());
-                String workDateTo = DatetimeUtil.toDefaultDateString(new Date());
+                String dateNow = DatetimeUtil.getDateString(new Date());
+                String workDateFrom = DatetimeUtil.getDateString(inMessage.getUpdateTime());
+                String workDateTo = DatetimeUtil.getDateString(new Date());
                 if (workDateFrom != null) {
                     while (DatetimeUtil.getDistanceDays(workDateFrom, dateNow) > 7) {
                         workDateTo = DatetimeUtil.plusTimeMillis(workDateFrom, (long) 1000 * 3600 * 24 * 7);
@@ -58,14 +73,14 @@ public class SynRecordUtil {
                             System.out.println("workDateFrom = " + workDateFrom + "; workDateTo = " + workDateTo);
                         }
                         try {
-                            post(dingRecordModel,backMessage, accessToken , workDateFrom, workDateTo);
+                            post(offset, dingRecordModel,backMessage, accessToken , workDateFrom, workDateTo);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                         workDateFrom = workDateTo;
                     }
                     try {
-                        post(dingRecordModel,backMessage, accessToken , workDateFrom, workDateTo);
+                        post(offset, dingRecordModel,backMessage, accessToken , workDateFrom, workDateTo);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -78,12 +93,14 @@ public class SynRecordUtil {
         }
     }
 
-    private static void post(DingRecordModel dingRecordModel,MessageModel outMessage, String accessToken , String workDateFrom, String workDateTo){
+    private static void post(int offset, DingRecordModel dingRecordModel,MessageModel outMessage, String accessToken , String workDateFrom, String workDateTo){
         String url = OAPI_HOST + "/attendance/list?" +"access_token=" + accessToken;
         JSONObject args = new JSONObject();
-        args.put("userId", null);
+        args.put("userIdList", dingRecordModel.getUserIdList());
         args.put("workDateFrom", workDateFrom);
         args.put("workDateTo", workDateTo);
+        args.put("offset", offset);
+        args.put("limit", limitNum);
         String result =  HttpHelper.httpPost(url, args.toJSONString());
         DingRecordModel resultModel = JSON.parseObject(result,DingRecordModel.class);
         if(resultModel == null){
@@ -94,6 +111,10 @@ public class SynRecordUtil {
             dingRecordModel.setErrmsg(resultModel.getErrmsg());
             dingRecordModel.setUpdateTime(DatetimeUtil.string2Date(workDateTo));
             dingRecordModel.getRecordresult().addAll(resultModel.getRecordresult());
+        }
+        //递归查询所有记录
+        if("ok".equals(resultModel.getErrmsg()) && resultModel.isHasMore()){
+            post(offset + limitNum, dingRecordModel, outMessage, accessToken, workDateFrom, workDateTo);
         }
     }
 }

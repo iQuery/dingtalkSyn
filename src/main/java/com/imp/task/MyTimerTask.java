@@ -52,7 +52,7 @@ public class MyTimerTask {
 		SynRecordTask synRecordTask = new SynRecordTask();
 		newScheduledThreadPool = Executors.newScheduledThreadPool(2);
 		newScheduledThreadPool.scheduleAtFixedRate(synDataTask,5000, interval * 1000, TimeUnit.MILLISECONDS);
-		newScheduledThreadPool.scheduleAtFixedRate(synRecordTask,3000, recordInterval * 50, TimeUnit.MILLISECONDS);
+		newScheduledThreadPool.scheduleAtFixedRate(synRecordTask,3000, recordInterval * 1000, TimeUnit.MILLISECONDS);
 	}
 
 }

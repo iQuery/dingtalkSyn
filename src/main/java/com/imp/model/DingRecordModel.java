@@ -12,6 +12,8 @@ public class DingRecordModel {
     private Integer errcode;
     private String errmsg;
     private Date updateTime;
+    private boolean hasMore;
+    private String[] userIdList;
 
     private List<DingRecordresultModel> recordresult;
 
@@ -53,5 +55,21 @@ public class DingRecordModel {
 
     public void setRecordresult(List<DingRecordresultModel> recordresult) {
         this.recordresult = recordresult;
+    }
+
+    public boolean isHasMore() {
+        return hasMore;
+    }
+
+    public void setHasMore(boolean hasMore) {
+        this.hasMore = hasMore;
+    }
+
+    public String[] getUserIdList() {
+        return userIdList;
+    }
+
+    public void setUserIdList(String[] userIdList) {
+        this.userIdList = userIdList;
     }
 }
