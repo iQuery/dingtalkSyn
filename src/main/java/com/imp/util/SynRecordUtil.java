@@ -25,12 +25,14 @@ public class SynRecordUtil {
     public static void getData(String serverUrl) {
         String jsonStr = HttpHelper.httpPost(serverUrl + GET_SYN_DATA, null);
         List<MessageModel> list = JSONObject.parseArray(jsonStr, MessageModel.class);
-        List<DingRecordModel> dingRecordModelList = new ArrayList<>();
+
         if (list != null) {
             for (MessageModel inMessage : list) {
+                List<DingRecordModel> dingRecordModelList = new ArrayList<>();
                 userListPaging(inMessage, dingRecordModelList);
+                HttpHelper.httpPost(serverUrl + CALL_BACK, JSON.toJSONString(dingRecordModelList));
             }
-            HttpHelper.httpPost(serverUrl + CALL_BACK, JSON.toJSONString(dingRecordModelList));
+
         }
     }
 
@@ -102,6 +104,7 @@ public class SynRecordUtil {
         args.put("offset", offset);
         args.put("limit", limitNum);
         String result =  HttpHelper.httpPost(url, args.toJSONString());
+        System.out.println(DatetimeUtil.toDefaultDateString(new Date()) + "   " + result);
         DingRecordModel resultModel = JSON.parseObject(result,DingRecordModel.class);
         if(resultModel == null){
             return;
